@@ -13,20 +13,38 @@ def insert_statistics(audiofilename: str, duration:int = None, agentrating: int 
     # Convert list to JSON string if not None
     anomaly_reasons_json = json.dumps(anomaly_reasons) if anomaly_reasons else None
 
-    insert_query = """
-        INSERT INTO Statistic (AudioFileName, Duration, AgentRating, SentiRating, Anomaly, AnomalyReason)
-        OUTPUT INSERTED.ID
-        VALUES (?, ?, ?, ?, ?, ?)
-    """
+    # Check if the record already exists
+    cursor.execute("SELECT ID FROM Statistic WHERE AudioFileName = ?", (audiofilename,))
+    row = cursor.fetchone()
 
-    cursor.execute(insert_query, (audiofilename,duration, agentrating, sentirating, anomaly, anomaly_reasons_json))
-    new_id = cursor.fetchone()[0]
+    if row:
+        # Update existing record
+        record_id = row[0]
+        update_query = """
+            UPDATE Statistic
+            SET Duration = ?,
+                AgentRating = ?,
+                SentiRating = ?,
+                Anomaly = ?,
+                AnomalyReason = ?
+            WHERE ID = ?
+        """
+        cursor.execute(update_query, (duration, agentrating, sentirating, anomaly, anomaly_reasons_json, record_id))
+    else:
+        # Insert new record
+        insert_query = """
+            INSERT INTO Statistic (AudioFileName, Duration, AgentRating, SentiRating, Anomaly, AnomalyReason)
+            OUTPUT INSERTED.ID
+            VALUES (?, ?, ?, ?, ?, ?)
+        """
+        cursor.execute(insert_query, (audiofilename, duration, agentrating, sentirating, anomaly, anomaly_reasons_json))
+        record_id = cursor.fetchone()[0]
 
     conn.commit()
     cursor.close()
     conn.close()
 
-    return new_id
+    return record_id
 
 def get_agent_statistics(start_datetime=None, end_datetime=None):
     """

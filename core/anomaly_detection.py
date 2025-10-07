@@ -68,7 +68,14 @@ async def anomaly_detection_sementic(text: str) -> dict:
 
     try:
         parsed = json.loads(response.content)
+
+        # Normalize reasons: if it's a single string, convert to list
+        if isinstance(parsed.get("reasons"), str):
+            parsed["reasons"] = [parsed["reasons"]]
+
+        # Ensure anomalyCount matches the length of reasons
+        parsed["anomalyCount"] = len(parsed.get("reasons", []))
+
         return parsed
     except Exception:
         return {"isAnomaly": False, "anomalyCount": 0, "reasons": []}
- 
