@@ -1,7 +1,7 @@
 import requests
 import os
 from urllib.parse import urlparse, parse_qs
-
+import json
 class ServiceNowPDFUploader:
     def __init__(self, instance_url, access_token):
         self.instance_url = instance_url.rstrip('/')
@@ -31,6 +31,50 @@ class ServiceNowPDFUploader:
         
         return None
     
+    def upload_feedback_file(self, incident_sys_id: str, feedback: str, rate: str, as_json=True):
+        """
+        Create and upload a feedback file (JSON or TXT) to the incident.
+        Example:
+            uploader.upload_feedback_file(sys_id, "stress site", "good", as_json=True)
+        """
+        url = f"{self.instance_url}/api/now/attachment/file"
+        filename = "feedback.json" if as_json else "feedback.txt"
+
+        # Prepare content
+        if as_json:
+            file_content = json.dumps({"rate": rate, "feedback": feedback}, indent=2)
+            content_type = "application/json"
+        else:
+            file_content = f"Rate: {rate}\nFeedback: {feedback}"
+            content_type = "text/plain"
+
+        params = {
+            "table_name": "incident",
+            "table_sys_id": incident_sys_id,
+            "file_name": filename
+        }
+
+        headers = {
+            "Authorization": f"Bearer {self.access_token}",
+            "Accept": "application/json",
+            "Content-Type": content_type
+        }
+
+        response = self.session.post(
+            url,
+            params=params,
+            headers=headers,
+            data=file_content.encode("utf-8")
+        )
+
+        if response.status_code == 201:
+            print(f"✓ Successfully uploaded {filename} to incident")
+            return response.json()
+        else:
+            print(f"✗ Failed to upload feedback: {response.status_code}")
+            print(f"Response: {response.text}")
+            return {"error": "feedback upload failed", "status_code": response.status_code}
+
     def upload_pdf_to_incident(self, incident_sys_id, pdf_file_path, custom_filename=None):
         """Upload PDF to incident using sys_id"""
         if not os.path.exists(pdf_file_path):
@@ -146,7 +190,13 @@ def get_servicenow_access_token():
     url = "https://franciscanalliancepoc.service-now.com/oauth_token.do"
     
     # Use the exact payload from Postman (already URL encoded)
-    payload = 'grant_type=password&client_id=01edacb178164926b5e7de3d9f33cd22&client_secret=-4%40dz2D%3CJ-&username=XSNELEVANCEPOC&password=Sh%25YveCmqS%249)Ny50ngTR%24Fr5S'
+    payload = {
+        "grant_type": "password",
+        "client_id": "01edacb178164926b5e7de3d9f33cd22",
+        "client_secret": "-4@dz2D<J-",
+        "username": "XSNELEVANCEPOC",
+        "password": "-{&C{ko.}=0x8f<RPi};U.IIoJ;Qecz0WMEf8]}qO@>1NgRZjY>OvHoV>,4I0dAQ9f!dDr0qSd0oG_Xs=(,,f^gUCCog4:9.*o:9"
+    }
     
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded'
@@ -166,4 +216,4 @@ def get_servicenow_access_token():
     except Exception as e:
         print(f"Error: {e}")
         return None
-    
+     

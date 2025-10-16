@@ -31,7 +31,8 @@ class FileProcessResponse(BaseModel):
     Agent_name: str
     sentiment_chunks: Optional[list] = None
     call_outs: List[CallOutItem] = Field(default_factory=list) # New response field
-    anomaly_detection: AnomalyDetectionResult  
+    anomaly_detection: AnomalyDetectionResult 
+    inc_number: Optional[str] = None 
 
 class BatchProcessResponse(BaseModel):
     results: Dict[str, FileProcessResponse] # ✅ per filename

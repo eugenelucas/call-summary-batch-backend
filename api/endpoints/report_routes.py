@@ -231,6 +231,7 @@ async def process_calls(req: ProcessRequest, request: Request):
 
 
         processed_calls[filename] = state
+        incident_number = extract_inc_number(state)
         emails = process_email_notifications(state)
 
         #Anomal Detection
@@ -259,7 +260,8 @@ async def process_calls(req: ProcessRequest, request: Request):
             Customer_name=state.get("Customer_name"),
             Agent_name=state.get("Agent_name"),
             call_outs=call_out_items,
-            anomaly_detection=anomaly_result
+            anomaly_detection=anomaly_result,
+            inc_number=incident_number
         )
 
 

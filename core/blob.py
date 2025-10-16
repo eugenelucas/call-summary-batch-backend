@@ -1,4 +1,7 @@
 from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import generate_blob_sas, BlobSasPermissions
+from datetime import datetime, timedelta
+
 import os
 from datetime import datetime
 from fastapi import  UploadFile
@@ -45,3 +48,20 @@ def upload_audio_to_blob(file: UploadFile) -> str:
     # Upload directly from file object stream
     blob_client.upload_blob(file.file, overwrite=True)
     return blob_client.url
+
+def generate_audio_sas_url(blob_name: str):
+    blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
+    account_name = blob_service_client.account_name
+    key = blob_service_client.credential.account_key
+
+    sas_token = generate_blob_sas(
+        account_name=account_name,
+        container_name=AZURE_STORAGE_CONTAINER_NAME,
+        blob_name=blob_name,
+        account_key=key,
+        permission=BlobSasPermissions(read=True),
+        expiry=datetime.utcnow() + timedelta(minutes=15)
+    )
+
+    url = f"https://{account_name}.blob.core.windows.net/{AZURE_STORAGE_CONTAINER_NAME}/{blob_name}?{sas_token}"
+    return url

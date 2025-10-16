@@ -4,7 +4,7 @@ from fastapi import Query
 from dbs.audio import get_audio_files
 from dbs.audio import insert_audio_metadata
 from fastapi.responses import JSONResponse
-from core.blob import upload_audio_to_blob
+from core.blob import upload_audio_to_blob, generate_audio_sas_url
 
 router = APIRouter()
 
@@ -33,3 +33,11 @@ async def upload_audio(file: UploadFile = File(...)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+@router.get("/audio/{blob_name}")
+async def get_audio_url(blob_name: str):
+    """
+    Returns a temporary signed URL to stream or download the audio file.
+    """
+    url = generate_audio_sas_url(blob_name)
+    return {"url": url}
